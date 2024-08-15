@@ -1,0 +1,42 @@
+name: mye-local
+services:
+  mye-database:
+    image: mye-database-local
+    build:
+      context: ../mye-database/docker
+      dockerfile: Dockerfile
+    env_file: ../mye-database/docker/.env
+    ports:
+      - 3033:5432
+    restart: always
+  mye-api:
+    image: mye-api-local
+    build:
+      context: ../mye-api
+      dockerfile: Dockerfile.local
+    env_file: ../mye-api/.env
+    volumes:
+      - ../mye-api:/usr/app:rw
+    # npm ci is part of the command, because the bound volume
+    # overwrites the built folder, and the node_modules folder gets "lost".
+    # This way, the node_modules gets folder gets created after the mount was made
+    # and synced to the local machine.
+    command: bash -c "npm ci && npm run dev"
+    ports:
+      - 3000:3000
+    restart: always
+    depends_on:
+      - mye-database
+  mye-webapp:
+    image: mye-webapp-local
+    build:
+      context: ../mye-webapp
+      dockerfile: Dockerfile.local
+    volumes:
+      - ../mye-webapp:/usr/app:rw
+    command: bash -c "npm ci --force && npm run dev"
+    ports:
+      - 5173:5173
+    restart: always
+    depends_on:
+      - mye-api
